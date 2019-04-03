@@ -1,9 +1,10 @@
 {
     "server":"127.0.0.1",
-    "server_port":8388,
-    "local_port":1080,
-    "local_address":"127.0.0.1",
-    "password":"barfoo!",
-    "method": "aes-128-cfb",
+    "port_password": {
+		"8387": "jinxmcgforcedaccess",
+		"8388": "jinxmcgforcedaccess"
+    },
+    "password":"jinxmcgforcedaccess",
+    "method": "aes-256-cfb",
     "timeout":600
 }
