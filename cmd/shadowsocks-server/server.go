@@ -428,20 +428,21 @@ func runUDP(port, password string) {
 }
 
 func enoughOptions(config *ss.Config) bool {
-	return true //config.ServerPort != 0 && config.Password != ""
+	return config.ServerPort != "" && config.Password != ""
 }
 
 func unifyPortPassword(config *ss.Config) (err error) {
 
 	if len(config.PortPassword) == 0 { // this handles both nil PortPassword and empty one
-		if !enoughOptions(config) {
-			fmt.Fprintln(os.Stderr, "must specify both port and password")
-			return errors.New("not enough options")
-		}
-		//port := strconv.Itoa(config.ServerPort)
-		config.PortPassword = map[string]string{config.ServerPort: config.Password}
+		/*
+			if !enoughOptions(config) {
+				fmt.Fprintln(os.Stderr, "must specify both port and password")
+				return errors.New("not enough options")
+			}
+			config.PortPassword = map[string]string{config.ServerPort: config.Password}
+		*/
 	} else {
-		if config.Password != "" || config.ServerPort != 0 {
+		if config.Password != "" || config.ServerPort != "" {
 			fmt.Fprintln(os.Stderr, "given port_password, ignore server_port and password option")
 		}
 	}
@@ -461,7 +462,7 @@ func main() {
 	flag.BoolVar(&printVer, "version", false, "print version")
 	flag.StringVar(&configFile, "c", "config.json", "specify config file")
 	flag.StringVar(&cmdConfig.Password, "k", "", "password")
-	flag.IntVar(&cmdConfig.ServerPort, "p", 0, "server port")
+	flag.StringVar(&cmdConfig.ServerPort, "p", "", "server port")
 	flag.IntVar(&cmdConfig.Timeout, "t", 300, "timeout in seconds")
 	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
 	flag.IntVar(&core, "core", 0, "maximum number of CPU cores to use, default is determinied by Go runtime")
@@ -506,10 +507,12 @@ func main() {
 		runtime.GOMAXPROCS(core)
 	}
 
-	for port, password := range config.PortPassword {
-		go run(port, password)
-		if udp {
-			go runUDP(port, password)
+	if len(config.PortPassword) > 0 {
+		for port, password := range config.PortPassword {
+			go run(port, password)
+			if udp {
+				go runUDP(port, password)
+			}
 		}
 	}
 

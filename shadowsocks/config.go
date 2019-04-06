@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+
 	// "log"
 	"os"
 	"reflect"
@@ -19,7 +20,7 @@ import (
 
 type Config struct {
 	Server       interface{} `json:"server"`
-	ServerPort   int         `json:"server_port"`
+	ServerPort   string      `json:"server_port"`
 	LocalPort    int         `json:"local_port"`
 	LocalAddress string      `json:"local_address"`
 	Password     string      `json:"password"`
