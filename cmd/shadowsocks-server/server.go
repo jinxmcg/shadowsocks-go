@@ -43,13 +43,9 @@ var sanitizeIps bool
 var udp bool
 var managerAddr string
 
-func getIP() {
-	return true
-}
-
 func getRequest(conn *ss.Conn) (host string, err error) {
 	ss.SetReadTimeout(conn)
-	getIP()
+
 	// buf size should at least have the same size with the largest possible
 	// request size (when addrType is 3, domain name has at most 256 bytes)
 	// 1(addrType) + 1(lenByte) + 255(max length address) + 2(port) + 10(hmac-sha1)
@@ -110,6 +106,20 @@ func sanitizeAddr(addr net.Addr) string {
 	}
 }
 
+func getIP(s string) (string, error) {
+	ip, _, err := net.SplitHostPort(s)
+	if err == nil {
+		return ip, nil
+	}
+
+	ip2 := net.ParseIP(s)
+	if ip2 == nil {
+		return "", errors.New("invalid IP")
+	}
+
+	return ip2.String(), nil
+}
+
 func handleConnection(conn *ss.Conn, port string) {
 	var host string
 
@@ -150,8 +160,18 @@ func handleConnection(conn *ss.Conn, port string) {
 		closed = true
 		return
 	}
-	debug.Println("connecting", host)
-	remote, err := net.Dial("tcp", host)
+	debug.Println("connecting", host, "from", conn.LocalAddr().String())
+
+	locIp, _ := getIP(conn.LocalAddr().String())
+
+	dialer := &net.Dialer{
+		LocalAddr: &net.TCPAddr{
+			IP:   net.ParseIP(locIp),
+			Port: 0,
+		},
+	}
+
+	remote, err := dialer.Dial("tcp", host)
 	if err != nil {
 		if ne, ok := err.(*net.OpError); ok && (ne.Err == syscall.EMFILE || ne.Err == syscall.ENFILE) {
 			// log too many open file error
@@ -348,7 +368,7 @@ func waitSignal() {
 }
 
 func run(port, password string) {
-	ln, err := net.Listen("tcp", ":"+port)
+	ln, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Printf("error listening port %v: %v\n", port, err)
 		os.Exit(1)
@@ -448,6 +468,7 @@ func main() {
 	flag.BoolVar((*bool)(&sanitizeIps), "A", false, "anonymize client ip addresses in all output")
 	flag.BoolVar(&udp, "u", false, "UDP Relay")
 	flag.StringVar(&managerAddr, "manager-address", "", "shadowsocks manager listening address")
+
 	flag.Parse()
 
 	if printVer {
@@ -472,6 +493,7 @@ func main() {
 	if config.Method == "" {
 		config.Method = "aes-256-cfb"
 	}
+
 	if err = ss.CheckCipherMethod(config.Method); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -482,6 +504,7 @@ func main() {
 	if core > 0 {
 		runtime.GOMAXPROCS(core)
 	}
+
 	for port, password := range config.PortPassword {
 		go run(port, password)
 		if udp {
