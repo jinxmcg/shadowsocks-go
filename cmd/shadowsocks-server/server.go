@@ -367,11 +367,12 @@ func waitSignal() {
 	}
 }
 
-func run(port, password string) {
+func run(port, password string) error {
 	ln, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Printf("error listening port %v: %v\n", port, err)
-		os.Exit(1)
+		//os.Exit(1)
+		return err
 	}
 	passwdManager.add(port, password, ln)
 	var cipher *ss.Cipher
@@ -381,7 +382,7 @@ func run(port, password string) {
 		if err != nil {
 			// listener maybe closed to update password
 			debug.Printf("accept error: %v\n", err)
-			return
+			return err
 		}
 		// Creating cipher upon first connection.
 		if cipher == nil {
@@ -399,12 +400,21 @@ func run(port, password string) {
 
 func runUDP(port, password string) {
 	var cipher *ss.Cipher
-	port_i, _ := strconv.Atoi(port)
+
 	log.Printf("listening udp port %v\n", port)
+
+	hst, prt, err := net.SplitHostPort(port)
+	if err != nil {
+		log.Printf("error listening udp port %v: %v\n", port, err)
+		return
+	}
+	portI, _ := strconv.Atoi(prt)
+
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{
-		IP:   net.IPv6zero,
-		Port: port_i,
+		IP:   net.ParseIP(hst),
+		Port: portI,
 	})
+
 	passwdManager.addUDP(port, password, conn)
 	if err != nil {
 		log.Printf("error listening udp port %v: %v\n", port, err)
@@ -468,7 +478,7 @@ func main() {
 	flag.IntVar(&core, "core", 0, "maximum number of CPU cores to use, default is determinied by Go runtime")
 	flag.BoolVar((*bool)(&debug), "d", true, "print debug message")
 	flag.BoolVar((*bool)(&sanitizeIps), "A", false, "anonymize client ip addresses in all output")
-	flag.BoolVar(&udp, "u", false, "UDP Relay")
+	flag.BoolVar(&udp, "u", true, "UDP Relay")
 	flag.StringVar(&managerAddr, "manager-address", "127.0.0.1:6001", "shadowsocks manager listening address")
 
 	flag.Parse()
@@ -592,6 +602,7 @@ func managerDaemon(conn *net.UDPConn) {
 }
 
 func handleAddPort(payload []byte) []byte {
+
 	var params struct {
 		ServerPort interface{} `json:"server_port"` // may be string or int
 		Password   string      `json:"password"`
@@ -647,11 +658,13 @@ func parsePortNum(in interface{}) string {
 	switch in.(type) {
 	case string:
 		// try to convert to number then convert back, to ensure valid value
-		portNum, err := strconv.Atoi(in.(string))
-		if portNum == 0 || err != nil {
-			return ""
-		}
-		port = strconv.Itoa(portNum)
+		/*
+			portNum, err := strconv.Atoi(in.(string))
+			if portNum == 0 || err != nil {
+				return ""
+			}
+		*/
+		port = in.(string) //strconv.Itoa(portNum)
 	case float64:
 		port = strconv.Itoa(int(in.(float64)))
 	default:
