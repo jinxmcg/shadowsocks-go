@@ -464,10 +464,10 @@ func main() {
 	flag.IntVar(&cmdConfig.Timeout, "t", 300, "timeout in seconds")
 	flag.StringVar(&cmdConfig.Method, "m", "", "encryption method, default: aes-256-cfb")
 	flag.IntVar(&core, "core", 0, "maximum number of CPU cores to use, default is determinied by Go runtime")
-	flag.BoolVar((*bool)(&debug), "d", false, "print debug message")
+	flag.BoolVar((*bool)(&debug), "d", true, "print debug message")
 	flag.BoolVar((*bool)(&sanitizeIps), "A", false, "anonymize client ip addresses in all output")
 	flag.BoolVar(&udp, "u", false, "UDP Relay")
-	flag.StringVar(&managerAddr, "manager-address", "", "shadowsocks manager listening address")
+	flag.StringVar(&managerAddr, "manager-address", "127.0.0.1:6001", "shadowsocks manager listening address")
 
 	flag.Parse()
 
