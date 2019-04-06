@@ -43,9 +43,13 @@ var sanitizeIps bool
 var udp bool
 var managerAddr string
 
+func getIP() {
+	return true
+}
+
 func getRequest(conn *ss.Conn) (host string, err error) {
 	ss.SetReadTimeout(conn)
-
+	getIP()
 	// buf size should at least have the same size with the largest possible
 	// request size (when addrType is 3, domain name has at most 256 bytes)
 	// 1(addrType) + 1(lenByte) + 255(max length address) + 2(port) + 10(hmac-sha1)
